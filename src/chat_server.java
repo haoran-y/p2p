@@ -8,9 +8,11 @@ public class chat_server implements Runnable
     private Socket clientSock;
 
     // Whole class keeps track of active clients
-    private static Map<chat_server, Boolean> clientList;
+    private static ArrayList<chat_server> clientList;
 
     private String name;
+
+    private boolean status;
 
     private chat_server paired;
 
@@ -25,13 +27,14 @@ public class chat_server implements Runnable
         toClientWriter =
                 new PrintWriter(clientSock.getOutputStream(), true);
         paired = null;
+        status = true;
     }
 
     // Add the given client to the active clients list
     // Since all threads share this, we use "synchronized" to make it atomic
     public static synchronized void addClient(chat_server server)
     {
-        clientList.put(server, true);
+        clientList.add(server);
     }
 
     // Remove the given client from the active clients list
@@ -45,11 +48,19 @@ public class chat_server implements Runnable
         return name;
     }
 
+    public void setStatus(boolean status) {
+        this.status = status;
+    }
+
+    public boolean getStatus() {
+        return status;
+    }
+
     public String getClients() {
         String output = "Lists of clients and states\n";
-        for (chat_server i : clientList.keySet()) {
+        for (chat_server i : clientList) {
             output += i.getName() + "           ";
-            if (clientList.get(i)) {
+            if (i.getStatus()) {
                 output += "free\n";
             } else {
                 output += "busy\n";
@@ -59,8 +70,8 @@ public class chat_server implements Runnable
     }
 
     public synchronized void update(String output) {
-        for (chat_server i: clientList.keySet()) {
-            if (clientList.get(i)) {
+        for (chat_server i: clientList) {
+            if (i.getStatus()) {
                 i.toClientWriter.println(output);
             }
         }
@@ -68,8 +79,8 @@ public class chat_server implements Runnable
 
     public synchronized boolean checkAvail() {
         int avail = 0;
-        for (boolean i : clientList.values()) {
-            if (i) {
+        for (chat_server i : clientList) {
+            if (i.getStatus()) {
                 avail ++;
             }
         }
@@ -88,12 +99,12 @@ public class chat_server implements Runnable
         while (paired == null) {
             if (fromClientReader.ready()) {
                 String pairedName = fromClientReader.readLine();
-                for (chat_server i : clientList.keySet()) {
+                for (chat_server i : clientList) {
                     if (i.getName().equals(pairedName)) {
-                        if (clientList.get(i)) {
+                        if (i.getStatus()) {
                             if (confirm(i)) {
-                                clientList.replace(i, false);
-                                clientList.replace(this, false);
+                                i.setStatus(false);
+                                setStatus(false);
                                 paired = i;
                                 i.paired = this;
                                 toClientWriter.println("You are connected to " + i.getName());
@@ -117,7 +128,7 @@ public class chat_server implements Runnable
     }
 
     public boolean checkName(String name) {
-        for (chat_server i : clientList.keySet()) {
+        for (chat_server i : clientList) {
             if (i.getName().equals(name)) {
                 return false;
             }
@@ -125,9 +136,9 @@ public class chat_server implements Runnable
         return true;
     }
 
-    public synchronized void disconnect() throws IOException {
+    public void disconnect() throws IOException {
         paired = null;
-        clientList.replace(this, true);
+        setStatus(true);
         System.out.println(getClients());
         update(getClients());
         fromClientReader = new BufferedReader(
@@ -203,7 +214,7 @@ public class chat_server implements Runnable
                     new ServerSocket(Integer.parseInt(args[0]));
 
             // Keep track of active clients
-            clientList = new HashMap<>();
+            clientList = new ArrayList<chat_server>();
             System.out.println("Waiting for a client ...");
             // Keep accepting/serving new clients
             while (true) {
