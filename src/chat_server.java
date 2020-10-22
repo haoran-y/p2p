@@ -173,16 +173,18 @@ public class chat_server implements Runnable
 
             // Keep doing till client sends EOF
             while (true) {
-                String line = fromClientReader.readLine();
-                if (line == null) {
-                    removeClient(this);
-                    if (paired != null) {
-                        paired.toClientWriter.println(name + " disconnected");
-                        paired.disconnect();
+                if (paired != null) {
+                    String line = fromClientReader.readLine();
+                    if (line == null) {
+                        removeClient(this);
+                        if (paired != null) {
+                            paired.toClientWriter.println(name + " disconnected");
+                            paired.disconnect();
+                        }
+                        break;
+                    } else {
+                        paired.toClientWriter.println(name + ": " + line);
                     }
-                    break;
-                } else {
-                    paired.toClientWriter.println(name + ": " + line);
                 }
             }
 
