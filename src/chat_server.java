@@ -141,8 +141,6 @@ public class chat_server implements Runnable
         setStatus(true);
         System.out.println(getClients());
         update(getClients());
-        fromClientReader = new BufferedReader(
-                new InputStreamReader(clientSock.getInputStream()));
         pair();
     }
 
@@ -183,8 +181,9 @@ public class chat_server implements Runnable
                         paired.disconnect();
                     }
                     break;
+                } else {
+                    paired.toClientWriter.println(name + ": " + line);
                 }
-                paired.toClientWriter.println(name + ": " + line);
             }
 
             // Done with the client, close everything
