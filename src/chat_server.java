@@ -93,7 +93,7 @@ public class chat_server implements Runnable
         return answer.toLowerCase().equals("y") || answer.toLowerCase().equals("yes");
     }
 
-    public void pair() throws IOException {
+    public synchronized void pair() throws IOException {
         toClientWriter.println("Which client to connect to?");
         whileloop:
         while (paired == null) {
@@ -174,17 +174,19 @@ public class chat_server implements Runnable
             // Keep doing till client sends EOF
             while (true) {
 
-                String line = fromClientReader.readLine();
-                if (line == null) {
-                    removeClient(this);
-                    if (paired != null) {
-                        paired.toClientWriter.println(name + " disconnected");
-                        paired.disconnect();
-                    }
-                    break;
-                }
                 if (paired != null) {
-                    paired.toClientWriter.println(name + ": " + line);
+                    String line = fromClientReader.readLine();
+                    if (line == null) {
+                        removeClient(this);
+                        if (paired != null) {
+                            paired.toClientWriter.println(name + " disconnected");
+                            paired.disconnect();
+                        }
+                        break;
+                    }
+                    if (paired != null) {
+                        paired.toClientWriter.println(name + ": " + line);
+                    }
                 }
             }
 
