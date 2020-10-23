@@ -169,11 +169,12 @@ public class chat_server implements Runnable
             System.out.println("Waiting for a client ...");
             update(getClients());
 
-            pair();
-
             // Keep doing till client sends EOF
             while (true) {
 
+                if (!status) {
+                    pair();
+                }
                 if (paired != null) {
                     String line = fromClientReader.readLine();
                     if (line == null) {
