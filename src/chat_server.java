@@ -141,7 +141,6 @@ public class chat_server implements Runnable
         setStatus(true);
         System.out.println(getClients());
         update(getClients());
-        pair();
     }
 
     // The child thread starts here
