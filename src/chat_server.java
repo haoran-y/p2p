@@ -93,40 +93,6 @@ public class chat_server implements Runnable
         return answer.toLowerCase().equals("y") || answer.toLowerCase().equals("yes");
     }
 
-    public synchronized void pair() throws IOException {
-        toClientWriter.println("Which client to connect to?");
-        whileloop:
-        while (paired == null) {
-            if (fromClientReader.ready()) {
-                String pairedName = fromClientReader.readLine();
-                for (chat_server i : clientList) {
-                    if (i.getName().equals(pairedName)) {
-                        if (i.getStatus()) {
-                            if (confirm(i)) {
-                                i.setStatus(false);
-                                setStatus(false);
-                                paired = i;
-                                i.paired = this;
-                                toClientWriter.println("You are connected to " + i.getName());
-                                i.toClientWriter.println("You are connected to " + name);
-                            } else {
-                                toClientWriter.println(i.name + " declined the connection.");
-                                pair();
-                            }
-                        } else {
-                            toClientWriter.println("Denied");
-                            pair();
-                        }
-                        break whileloop;
-                    }
-                }
-                toClientWriter.println("Name not found!");
-                pair();
-                break;
-            }
-        }
-    }
-
     public boolean checkName(String name) {
         for (chat_server i : clientList) {
             if (i.getName().equals(name)) {
@@ -170,10 +136,42 @@ public class chat_server implements Runnable
 
             // Keep doing till client sends EOF
             while (true) {
-
-                if (!status) {
-                    pair();
+                while (status) {
+                    if (checkAvail()) {
+                        toClientWriter.println("Connect to which client?");
+                        while (true) {
+                            if (fromClientReader.ready()) {
+                                String pairedName = fromClientReader.readLine();
+                                whileloop:
+                                while (paired == null) {
+                                    for (chat_server i : clientList) {
+                                        if (i.getName().equals(pairedName)) {
+                                            if (i.getStatus()) {
+                                                if (confirm(i)) {
+                                                    i.setStatus(false);
+                                                    setStatus(false);
+                                                    paired = i;
+                                                    i.paired = this;
+                                                    toClientWriter.println("You are connected to " + i.getName());
+                                                    i.toClientWriter.println("You are connected to " + name);
+                                                } else {
+                                                    toClientWriter.println(i.name + " declined the connection.");
+                                                }
+                                            } else {
+                                                toClientWriter.println("Denied");
+                                            }
+                                            break whileloop;
+                                        }
+                                    }
+                                    toClientWriter.println("Name not found!");
+                                }
+                                break;
+                            }
+                        }
+                        break;
+                    }
                 }
+
                 if (paired != null) {
                     String line = fromClientReader.readLine();
                     if (line == null) {
@@ -202,7 +200,7 @@ public class chat_server implements Runnable
      * This main thread accepts new clients and spawns a thread for each client
      * Each child thread does the stuff under the run() method
      */
-    public static void main(String args[])
+    public static void main(String[] args)
     {
         // Server needs a port to listen on
         if (args.length != 1) {
