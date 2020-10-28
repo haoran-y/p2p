@@ -129,7 +129,7 @@ public class chat_server implements Runnable
 
             // Add this client to the active client list
             addClient(this);
-
+            toClientWriter.println("Welcome to CSCE416 chat room, send 'disconnect' to end chat!");
             System.out.println(getClients());
             System.out.println("Waiting for a client ...");
             update(getClients());
@@ -173,17 +173,19 @@ public class chat_server implements Runnable
                 }
 
                 if (paired != null) {
-                    String line = fromClientReader.readLine();
-                    if (line == null) {
-                        removeClient(this);
-                        if (paired != null) {
-                            paired.toClientWriter.println(name + " disconnected");
-                            paired.disconnect();
+                    if (fromClientReader.ready()) {
+                        String line = fromClientReader.readLine();
+                        if (line == "disconnect") {
+                            removeClient(this);
+                            if (paired != null) {
+                                paired.toClientWriter.println(name + " disconnected");
+                                paired.disconnect();
+                            }
+                            break;
                         }
-                        break;
-                    }
-                    if (paired != null) {
-                        paired.toClientWriter.println(name + ": " + line);
+                        if (paired != null) {
+                            paired.toClientWriter.println(name + ": " + line);
+                        }
                     }
                 }
             }
