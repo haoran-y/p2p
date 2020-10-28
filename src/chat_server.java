@@ -139,9 +139,12 @@ public class chat_server implements Runnable
                 while (status) {
                     if (checkAvail()) {
                         toClientWriter.println("Connect to which client?");
-                        while (true) {
+                        while (paired == null) {
                             if (fromClientReader.ready()) {
                                 String pairedName = fromClientReader.readLine();
+                                if (pairedName.equals(name)) {
+                                    break;
+                                }
                                 whileloop:
                                 while (paired == null) {
                                     for (chat_server i : clientList) {
@@ -175,7 +178,7 @@ public class chat_server implements Runnable
                 if (paired != null) {
                     if (fromClientReader.ready()) {
                         String line = fromClientReader.readLine();
-                        if (line == "disconnect") {
+                        if (line.equals("disconnect")) {
                             removeClient(this);
                             if (paired != null) {
                                 paired.toClientWriter.println(name + " disconnected");
